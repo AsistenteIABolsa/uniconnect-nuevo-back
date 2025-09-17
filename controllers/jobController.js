@@ -1,5 +1,10 @@
 import Job from "../models/Job.js"
 import Application from "../models/Application.js"
+import OpenAI from "openai"
+import User from "../models/User.js"
+import dotEnv from "dotenv"
+
+dotEnv.config()
 
 export const createJob = async (req, res) => {
   try {
@@ -22,7 +27,10 @@ export const getJobs = async (req, res) => {
     const query = { status: "active" }
 
     if (search) {
-      query.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }]
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ]
     }
 
     if (location) query.location = location
@@ -30,12 +38,14 @@ export const getJobs = async (req, res) => {
     if (experience) query.experience = experience
 
     const jobs = await Job.find(query)
-      .populate("employer", "firstName lastName profile.companyName")
+      .populate("employer", "firstName lastName companyName description")
       .sort({ createdAt: -1 })
 
     const jobsWithDetails = jobs.map((job) => ({
       ...job.toObject(),
-      companyName: job.employer.profile?.companyName || `${job.employer.firstName} ${job.employer.lastName}`,
+      companyName:
+        job.employer.companyName ||
+        `${job.employer.firstName} ${job.employer.lastName}`,
       posted: getTimeAgo(job.createdAt),
     }))
 
@@ -48,7 +58,10 @@ export const getJobs = async (req, res) => {
 
 export const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate("employer", "firstName lastName profile")
+    const job = await Job.findById(req.params.id).populate(
+      "employer",
+      "firstName lastName companyName description"
+    )
 
     if (!job || job.status !== "active") {
       return res.status(404).json({ message: "Trabajo no encontrado" })
@@ -56,8 +69,10 @@ export const getJobById = async (req, res) => {
 
     const jobWithDetails = {
       ...job.toObject(),
-      companyName: job.employer.profile?.companyName || `${job.employer.firstName} ${job.employer.lastName}`,
-      companyDescription: job.employer.profile?.description || "",
+      companyName:
+        job.employer.companyName ||
+        `${job.employer.firstName} ${job.employer.lastName}`,
+      companyDescription: job.employer.description || "",
       posted: formatDate(job.createdAt),
     }
 
@@ -70,16 +85,20 @@ export const getJobById = async (req, res) => {
 
 export const getEmployerJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ employer: req.user._id }).sort({ createdAt: -1 })
+    const jobs = await Job.find({ employer: req.user._id }).sort({
+      createdAt: -1,
+    })
 
     const jobsWithApplications = await Promise.all(
       jobs.map(async (job) => {
-        const applicationsCount = await Application.countDocuments({ job: job._id })
+        const applicationsCount = await Application.countDocuments({
+          job: job._id,
+        })
         return {
           ...job.toObject(),
           applicationsCount,
         }
-      }),
+      })
     )
 
     res.json(jobsWithApplications)
@@ -89,6 +108,69 @@ export const getEmployerJobs = async (req, res) => {
   }
 }
 
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+export const analisisAplicados = async (req, res) => {
+  try {
+    const { jobId } = req.params
+
+    // Buscar la vacante
+    const job = await Job.findById(jobId)
+    if (!job) {
+      return res.status(404).json({ message: "Vacante no encontrada" })
+    }
+
+    // Buscar aplicaciones con datos del estudiante
+    const applications = await Application.find({ job: jobId })
+      .populate("student", "firstName lastName email skills phone")
+
+    if (!applications.length) {
+      return res.status(404).json({ message: "No hay aplicaciones para esta vacante" })
+    }
+
+    // Preparar info para GPT
+    const aplicantesData = applications.map(app => ({
+      nombre: `${app.student.firstName} ${app.student.lastName}`,
+      email: app.student.email,
+      skills: app.student.skills?.length ? app.student.skills.join(", ") : "No especificadas",
+      coverLetter: app.coverLetter || "No proporcionada",
+    }))
+
+    // Prompt
+    const prompt = `
+Eres un reclutador experto. Se han recibido aplicaciones para la vacante: "${job.title}".
+Analiza los perfiles de los aplicantes y responde (sin ser muy extenso):
+
+1. ¿Qué fortalezas y debilidades tiene cada uno?
+2. ¿Qué aplicantes parecen más apropiados para el puesto?
+3. Da una recomendación final de los 2 candidatos más fuertes.
+
+Aplicantes:
+${JSON.stringify(aplicantesData, null, 2)}
+    `
+
+    // Llamada a GPT
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // puedes ajustar el modelo
+      messages: [
+        { role: "system", content: "Eres un experto en selección de personal y recursos humanos." },
+        { role: "user", content: prompt },
+      ],
+    })
+
+    const analisis = completion.choices[0].message.content
+
+    res.json({ job: job.title, analisis })
+  } catch (error) {
+    console.error("Error en analisisAplicados:", error)
+    res.status(500).json({ message: "Error interno del servidor" })
+  }
+}
+
+// Helpers
 const getTimeAgo = (date) => {
   const now = new Date()
   const diffTime = Math.abs(now - date)
