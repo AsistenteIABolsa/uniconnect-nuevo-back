@@ -22,7 +22,7 @@ app.use(
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Conectar a MongoDB
+// Conectar a MongoDB sisi
 connectDB()
 
 // Rutas

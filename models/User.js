@@ -30,7 +30,6 @@ const userSchema = new mongoose.Schema(
       enum: ["estudiante", "empleador", "administrador"],
     },
     phone: String,
-    profile: {
       // Para estudiantes
       studentId: String,
       major: String,
@@ -43,7 +42,7 @@ const userSchema = new mongoose.Schema(
       industry: String,
       companySize: String,
       description: String,
-    },
+   
   },
   {
     timestamps: true,
@@ -62,4 +61,5 @@ userSchema.methods.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password)
 }
 
-export default mongoose.model("User", userSchema)
+const User = mongoose.model("User", userSchema)
+export default User
