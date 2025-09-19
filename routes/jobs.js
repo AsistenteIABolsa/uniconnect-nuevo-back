@@ -1,3 +1,4 @@
+//routes.jobs.js
 import express from "express"
 import { createJob, getJobs, getJobById, getEmployerJobs } from "../controllers/jobController.js"
 import { auth, authorize } from "../middleware/auth.js"

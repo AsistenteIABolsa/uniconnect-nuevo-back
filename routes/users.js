@@ -1,3 +1,4 @@
+//routes.users.js
 import express from "express"
 import { updateProfile, getUsers, getUserStats } from "../controllers/userController.js"
 import { auth, authorize } from "../middleware/auth.js"
