@@ -5,6 +5,7 @@ import {
   getStudentApplications,
   getJobApplications,
   updateApplicationStatus,
+  getApplicationsByJob
 } from "../controllers/applicationController.js"
 import { auth, authorize } from "../middleware/auth.js"
 
@@ -14,5 +15,6 @@ router.post("/", auth, authorize("estudiante"), applyToJob)
 router.get("/student", auth, authorize("estudiante"), getStudentApplications)
 router.get("/job/:jobId", auth, authorize("empleador"), getJobApplications)
 router.patch("/:applicationId", auth, authorize("empleador"), updateApplicationStatus)
+router.get("/jobs/:jobId/applications", getApplicationsByJob)
 
 export default router

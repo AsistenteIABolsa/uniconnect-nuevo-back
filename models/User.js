@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       enum: ["estudiante", "empleador", "administrador"],
     },
+    
     phone: String,
       // Para estudiantes
       studentId: String,
@@ -36,9 +37,14 @@ const userSchema = new mongoose.Schema(
       graduationYear: String,
       about: String,
       skills: [String],
+      egresado:{
+      type: Boolean, default: false
+    },
+      experience: String,
 
       // Para empleadores
       companyName: String,
+      nit: String,
       industry: String,
       companySize: String,
       description: String,
