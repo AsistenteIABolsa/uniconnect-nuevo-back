@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema(
     graduationYear: String,
     about: String,
     skills: [String],
+    egresado: {
+      type: Boolean,
+      default: false,
+    },
+    experience: String,
     education: [
       {
         institution: String,
@@ -68,8 +73,9 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    // Para empleadores (lo dejamos igual)
+    // Para empleadores
     companyName: String,
+    nit: String,
     industry: String,
     companySize: String,
     description: String,

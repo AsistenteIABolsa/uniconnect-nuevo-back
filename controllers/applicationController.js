@@ -117,3 +117,17 @@ const formatDate = (date) => {
     day: "numeric",
   })
 }
+
+export const getApplicationsByJob = async (req, res) => {
+  try {
+    const { jobId } = req.params
+
+    const applications = await Application.find({ job: jobId })
+      .populate("student", "firstName lastName skills phone egresado email ")
+
+    res.json(applications)
+  } catch (error) {
+    console.error("Error obteniendo aplicaciones:", error)
+    res.status(500).json({ message: "Error interno del servidor" })
+  }
+}
