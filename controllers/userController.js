@@ -1,24 +1,54 @@
-////controllers.userController.js
 import User from "../models/User.js"
 import Job from "../models/Job.js"
 import Application from "../models/Application.js"
 
 export const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, phone, ...profileData } = req.body
+    // tomamos todos los campos posibles
+    const {
+      firstName,
+      lastName,
+      phone,
+      studentId,
+      major,
+      graduationYear,
+      about,
+      skills,
+      education,
+      workExperience,
+      projects,
+      languages,
+      // campos empresa quedan tal cual
+      companyName,
+      industry,
+      companySize,
+      description,
+    } = req.body
 
     const updateData = {
       firstName,
       lastName,
       phone,
-      profile: {
-        ...req.user.profile,
-        ...profileData,
-      },
+      studentId,
+      major,
+      graduationYear,
+      about,
+      skills,
+      education,
+      workExperience,
+      projects,
+      languages,
+      companyName,
+      industry,
+      companySize,
+      description,
     }
 
-    await User.findByIdAndUpdate(req.user._id, updateData)
-    res.json({ message: "Perfil actualizado exitosamente" })
+    const updated = await User.findByIdAndUpdate(req.user._id, updateData, {
+      new: true,
+    }).select("-password")
+
+    res.json({ message: "Perfil actualizado exitosamente", user: updated })
   } catch (error) {
     console.error("Error actualizando perfil:", error)
     res.status(500).json({ message: "Error interno del servidor" })

@@ -1,5 +1,3 @@
-//models.User.js
-
 import mongoose from "mongoose"
 import bcrypt from "bcryptjs"
 
@@ -29,26 +27,58 @@ const userSchema = new mongoose.Schema(
       required: true,
       enum: ["estudiante", "empleador", "administrador"],
     },
-    
     phone: String,
-      // Para estudiantes
-      studentId: String,
-      major: String,
-      graduationYear: String,
-      about: String,
-      skills: [String],
-      egresado:{
-      type: Boolean, default: false
-    },
-      experience: String,
 
-      // Para empleadores
-      companyName: String,
-      nit: String,
-      industry: String,
-      companySize: String,
-      description: String,
-   
+    // Para estudiantes
+    studentId: String,
+    major: String,
+    graduationYear: String,
+    about: String,
+    skills: [String],
+    egresado: {
+      type: Boolean,
+      default: false,
+    },
+    experience: String,
+    education: [
+      {
+        institution: String,
+        degree: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+      },
+    ],
+    workExperience: [
+      {
+        company: String,
+        position: String,
+        startDate: String,
+        endDate: String,
+        description: String,
+      },
+    ],
+    projects: [
+      {
+        title: String,
+        description: String,
+        technologies: [String],
+        link: String,
+      },
+    ],
+    languages: [
+      {
+        name: String,
+        level: String,
+      },
+    ],
+
+    // Para empleadores
+    companyName: String,
+    nit: String,
+    industry: String,
+    companySize: String,
+    description: String,
   },
   {
     timestamps: true,
