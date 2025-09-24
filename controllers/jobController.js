@@ -162,9 +162,9 @@ ${JSON.stringify(aplicantesData, null, 2)}
       ],
     })
 
-    const analisis = completion.choices[0].message.content
+    const analisis_ia = completion.choices[0].message.content
 
-    res.json({ job: job.title, analisis })
+    res.json({ job: job.title, analisis_ia })
   } catch (error) {
     console.error("Error en analisisAplicados:", error)
     res.status(500).json({ message: "Error interno del servidor" })

@@ -12,6 +12,6 @@ router.post("/", auth, authorize("empleador"), validateJob, createJob)
 router.get("/", getJobs)
 router.get("/employer", auth, authorize("empleador"), getEmployerJobs)
 router.get("/:id", getJobById)
-router.get("/:jobId/analisis-aplicados", analisisAplicados)
+router.get("/:jobId/analisis-aplicados", analisisAplicados);
 
 export default router
