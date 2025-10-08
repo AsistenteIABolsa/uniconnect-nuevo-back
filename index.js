@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.js"
 import userRoutes from "./routes/users.js"
 import jobRoutes from "./routes/jobs.js"
 import applicationRoutes from "./routes/applications.js"
+import vapiRoutes from "./routes/vapiRoutes.js"
 
 dotenv.config()
 
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/users", userRoutes)
 app.use("/api/jobs", jobRoutes)
 app.use("/api/applications", applicationRoutes)
+app.use("/vapi", vapiRoutes)
 
 // Ruta de prueba
 app.get("/api/health", (req, res) => {

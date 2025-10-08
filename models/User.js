@@ -16,11 +16,11 @@ const userSchema = new mongoose.Schema(
     },
     firstName: {
       type: String,
-      required: true,
+      //required: true,
     },
     lastName: {
       type: String,
-      required: true,
+      //required: true,
     },
     role: {
       type: String,
@@ -33,6 +33,12 @@ const userSchema = new mongoose.Schema(
     studentId: String,
     major: String,
     graduationYear: String,
+    semestre: String,
+    tipoCarrera: { 
+      type: String, 
+      enum: ["Técnica", "Tecnológica", "Profesional", "Especialización", "Maestría", "Doctorado"] 
+    },
+    carrera: String,
     about: String,
     skills: [String],
     egresado: {
@@ -72,6 +78,11 @@ const userSchema = new mongoose.Schema(
         level: String,
       },
     ],
+
+    perfiladoPorDanna: {
+      type: Boolean,
+      default: false,
+    },
 
     // Para empleadores
     companyName: String,

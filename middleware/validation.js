@@ -3,8 +3,8 @@ import { body, validationResult } from "express-validator"
 export const validateRegister = [
   body("email").isEmail().normalizeEmail(),
   body("password").isLength({ min: 6 }),
-  body("firstName").notEmpty().trim(),
-  body("lastName").notEmpty().trim(),
+  //body("firstName").notEmpty().trim(),
+  //body("lastName").notEmpty().trim(),
   body("role").isIn(["estudiante", "empleador", "administrador"]),
   (req, res, next) => {
     const errors = validationResult(req)
