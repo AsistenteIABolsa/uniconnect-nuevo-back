@@ -16,11 +16,9 @@ const userSchema = new mongoose.Schema(
     },
     firstName: {
       type: String,
-      //required: true,
     },
     lastName: {
       type: String,
-      //required: true,
     },
     role: {
       type: String,
@@ -84,12 +82,52 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    // Para empleadores
+    // Para empleadores - Campos existentes
     companyName: String,
     nit: String,
     industry: String,
     companySize: String,
     description: String,
+
+    // NUEVOS CAMPOS PARA EMPRESA
+    mision: String,
+    vision: String,
+    // Proyectos empresariales
+    companyProjects: [
+      {
+        title: String,
+        description: String,
+        technologies: [String],
+        link: String,
+        startDate: String,
+        endDate: String,
+        status: {
+          type: String,
+          enum: ["En progreso", "Completado", "Planificado"],
+          default: "Planificado"
+        }
+      },
+    ],
+    // Redes sociales
+    socialMedia: {
+      website: String,
+      linkedin: String,
+      twitter: String,
+      facebook: String,
+      instagram: String,
+      github: String,
+    },
+    // Perfil empresarial profesional
+    companyProfile: {
+      founded: String,
+      headquarters: String,
+      specialties: [String],
+      values: [String],
+      culture: String,
+      achievements: [String],
+    },
+    contactEmail: String,
+    contactPhone: String,
   },
   {
     timestamps: true,
