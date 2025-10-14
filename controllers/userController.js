@@ -18,11 +18,19 @@ export const updateProfile = async (req, res) => {
       workExperience,
       projects,
       languages,
-      // campos empresa quedan tal cual
+      // campos empresa existentes
       companyName,
       industry,
       companySize,
       description,
+      // NUEVOS CAMPOS EMPRESA
+      mision,
+      vision,
+      companyProjects,
+      socialMedia,
+      companyProfile,
+      contactEmail,
+      contactPhone,
     } = req.body
 
     const updateData = {
@@ -42,6 +50,14 @@ export const updateProfile = async (req, res) => {
       industry,
       companySize,
       description,
+      // NUEVOS CAMPOS
+      mision,
+      vision,
+      companyProjects,
+      socialMedia,
+      companyProfile,
+      contactEmail,
+      contactPhone,
     }
 
     const updated = await User.findByIdAndUpdate(req.user._id, updateData, {
