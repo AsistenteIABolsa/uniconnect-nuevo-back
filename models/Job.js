@@ -41,6 +41,11 @@ const jobSchema = new mongoose.Schema(
       default: "active",
       enum: ["active", "inactive", "closed"],
     },
+
+    vacanteCreadaPorDanna: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

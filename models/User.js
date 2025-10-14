@@ -84,6 +84,11 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    vacantePorDanna: {
+      type: Boolean,
+      default: false,
+    },
+
     // Para empleadores
     companyName: String,
     nit: String,
