@@ -61,7 +61,7 @@ export const getJobById = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate(
       "employer",
-      "firstName lastName companyName description"
+      "firstName lastName email phone companyName description industry companySize mision vision companyProfile socialMedia contactPhone companyProjects"
     )
 
     if (!job || job.status !== "active") {
@@ -75,6 +75,7 @@ export const getJobById = async (req, res) => {
         `${job.employer.firstName} ${job.employer.lastName}`,
       companyDescription: job.employer.description || "",
       posted: formatDate(job.createdAt),
+      employer: job.employer // Incluimos todos los datos del empleador
     }
 
     res.json(jobWithDetails)
@@ -83,7 +84,6 @@ export const getJobById = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" })
   }
 }
-
 export const getEmployerJobs = async (req, res) => {
   try {
     const jobs = await Job.find({ employer: req.user._id }).sort({
@@ -109,6 +109,57 @@ export const getEmployerJobs = async (req, res) => {
   }
 }
 
+// Agrega estas funciones al final del archivo
+
+export const updateJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verificar que el trabajo existe y pertenece al empleador
+    const job = await Job.findOne({ _id: id, employer: req.user._id });
+    if (!job) {
+      return res.status(404).json({ message: "Trabajo no encontrado" });
+    }
+
+    // Actualizar el trabajo
+    const updatedJob = await Job.findByIdAndUpdate(
+      id,
+      { ...req.body },
+      { new: true, runValidators: true }
+    );
+
+    res.json({ 
+      message: "Trabajo actualizado exitosamente", 
+      job: updatedJob 
+    });
+  } catch (error) {
+    console.error("Error actualizando trabajo:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+export const deleteJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que el trabajo existe y pertenece al empleador
+    const job = await Job.findOne({ _id: id, employer: req.user._id });
+    if (!job) {
+      return res.status(404).json({ message: "Trabajo no encontrado" });
+    }
+
+    // Eliminar todas las aplicaciones asociadas a este trabajo
+    await Application.deleteMany({ job: id });
+
+    // Eliminar el trabajo
+    await Job.findByIdAndDelete(id);
+
+    res.json({ message: "Trabajo eliminado exitosamente" });
+  } catch (error) {
+    console.error("Error eliminando trabajo:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
