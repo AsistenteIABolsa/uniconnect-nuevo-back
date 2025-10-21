@@ -77,6 +77,7 @@ export const login = async (req, res) => {
     res.json({
       token,
       user: userResponse,
+      role: user.role
     })
   } catch (error) {
     console.error("Error en login:", error)

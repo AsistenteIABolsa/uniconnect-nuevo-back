@@ -2,6 +2,85 @@ import User from "../models/User.js";
 import Job from "../models/Job.js";
 import mongoose from "mongoose";
 
+// --- Utils ---
+function parseDateFlexible(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+  if (!s || s.toLowerCase() === "n/a") return null;
+
+  // Aceptar "DD-MM-YYYY" o "YYYY-MM-DD" o ISO
+  const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
+  const yyyymmdd = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+  if (ddmmyyyy.test(s)) {
+    const [, dd, mm, yyyy] = s.match(ddmmyyyy);
+    return `${yyyy}-${mm}-${dd}`; // devolver en YYYY-MM-DD
+  }
+  if (yyyymmdd.test(s)) return s;
+
+  // Último intento: Date parse
+  const d = new Date(s);
+  if (!isNaN(d)) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return null;
+}
+
+function toApiDate(str) {
+  // Garantiza que lo que respondes al front sea "YYYY-MM-DD" o ""
+  const norm = parseDateFlexible(str);
+  return norm || "";
+}
+
+function normalizeLanguages(input) {
+  // Modelo: languages: [ { name, level } ]
+  // Body puede traer: { name, level } o array
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return input
+      .map(x => ({ name: x?.name || "", level: x?.level || "" }))
+      .filter(x => x.name || x.level);
+  }
+  if (typeof input === "object") {
+    const name = input.name || "";
+    const level = input.level || "";
+    return (name || level) ? [{ name, level }] : [];
+  }
+  return [];
+}
+
+function normalizeSkills(input) {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean);
+  // Si llega como string "a, b, c"
+  return String(input).split(",").map(s => s.trim()).filter(Boolean);
+}
+
+function formatPhoneColombia(phone) {
+  const clean = String(phone ?? "")
+    .replace(/\s+/g, "")
+    .replace(/[^\d]/g, "");
+  if (!clean) return "";
+  if (clean.startsWith("57")) return `+${clean}`;
+  if (clean.startsWith("0")) return `+57${clean.slice(1)}`;
+  return `+57${clean}`;
+}
+
+function buildWorkExperience({ company, position, startDate, endDate }) {
+  const sd = parseDateFlexible(startDate);
+  const ed = parseDateFlexible(endDate);
+  if (!company && !position && !sd && !ed) return null;
+  return {
+    company: company || "",
+    position: position || "",
+    startDate: sd || "",
+    endDate: ed || "",
+    description: "",
+  };
+}
 //aqui van controladores de vapi
 
 export const getFechaHoy = (req, res) => {
@@ -72,87 +151,114 @@ export const verificarExistenciaEstudiante = async (req, res) => {
   }
 };
 
+// --- Controller ---
 export const perfilarEstudiante = async (req, res) => {
   try {
     const {
-        email,
-        firstName,
-        lastName,
-        phone,
-        carrera,
-        egresado,
-        semestre,
-        tipoCarrera,
-        experienciaLaboral,
-        
-        company,
-        position,
-        startDate,
-        endDate,
-        skills,
-        languages,
-      
+      email,
+      firstName,
+      lastName,
+      phone,
+      carrera,
+      egresado,
+      semestre,
+      tipoCarrera,
+      experienciaLaboral, // viene en body
+      company,
+      position,
+      startDate,
+      endDate,
+      skills,
+      languages,
     } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ error: "Falta email." });
+    }
     if (!firstName || !lastName || !phone) {
-      return res.status(400).json({ error: "Faltan datos requeridos para crear el paciente." });
+      return res
+        .status(400)
+        .json({ error: "Faltan datos requeridos: firstName, lastName o phone." });
     }
 
-    // Verifica si el paciente ya existe
-    const existe = await User.findOne({ email: email, perfiladoPorDanna: true });
-    if (existe) {
-      console.log("⚠️ Intento de perfilar un usuario ya perfilado.");
-      return res.status(409).json({ error: "El paciente ya fue perfilado anteriormente" });
+    // ¿Ya perfilado?
+    const yaPerfilado = await User.findOne({ email, perfiladoPorDanna: true });
+    if (yaPerfilado) {
+      return res.status(409).json({ error: "El usuario ya fue perfilado anteriormente." });
     }
 
-    // Actualiza el usuario existente con los nuevos datos perfilados
-    // Formatea el teléfono para que siempre tenga el prefijo +57
-    const formatPhoneNumber = (phone) => {
-      const clean = phone.toString().replace(/\D/g, '');
-      if (clean.startsWith('57')) return `+${clean}`;
-      if (clean.startsWith('0')) return `+57${clean.slice(1)}`;
-      return `+57${clean}`;
+    // Normalizaciones
+    const phoneFormatted = formatPhoneColombia(phone);
+    const normalizedSkills = normalizeSkills(skills);
+    const normalizedLanguages = normalizeLanguages(languages);
+    const expBlock = buildWorkExperience({ company, position, startDate, endDate });
+
+    // Armamos el $set
+    const setDoc = {
+      firstName,
+      lastName,
+      phone: phoneFormatted,
+      carrera: carrera ?? "",
+      egresado: Boolean(egresado),
+      semestre: semestre ?? "",
+      tipoCarrera: tipoCarrera ?? "",
+      // Mapear experienciaLaboral -> experience (tu modelo)
+      experience: (typeof experienciaLaboral === "string" ? experienciaLaboral : (experienciaLaboral ? "Sí" : "No")),
+      skills: normalizedSkills,
+      languages: normalizedLanguages,
+      perfiladoPorDanna: true,
     };
-    const phoneFormatted = formatPhoneNumber(phone);
 
-    // Solo actualiza los campos nuevos, sin modificar email, password ni role
-    const updatedUser = await User.findOneAndUpdate(
+    // Si vino un bloque de experiencia laboral, lo integramos al arreglo.
+    if (expBlock) {
+      setDoc.workExperience = [expBlock]; // sobrescribe con 1 item (ajusta según tu regla)
+    }
+
+    // Ojo: No modificar email, password ni role aquí.
+    const updated = await User.findOneAndUpdate(
       { email },
-      {
-        $set: {
-          firstName,
-          lastName,
-          phone: phoneFormatted,
-          carrera,
-          egresado,
-          semestre,
-          tipoCarrera,
-          experienciaLaboral,
-          company,
-          position,
-          startDate,
-          endDate,
-          skills,
-          languages,
-          perfiladoPorDanna: true
-        }
-      },
+      { $set: setDoc },
       { new: true }
     );
 
-    if (!updatedUser) {
+    if (!updated) {
       return res.status(404).json({ error: "Usuario no encontrado para perfilar." });
     }
 
-    console.log("✅ Usuario perfilado correctamente.");
+    // Prepara respuesta para que el front pinte bien
+    const responseUser = {
+      _id: updated._id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      phone: updated.phone,
+      carrera: updated.carrera,
+      egresado: updated.egresado,
+      semestre: updated.semestre,
+      tipoCarrera: updated.tipoCarrera,
+      experience: updated.experience,
+      skills: updated.skills,
+      languages: (updated.languages || []).map(l => ({
+        name: l?.name ?? "",
+        level: l?.level ?? "",
+      })),
+      workExperience: (updated.workExperience || []).map(w => ({
+        ...w,
+        startDate: toApiDate(w.startDate),
+        endDate: toApiDate(w.endDate),
+      })),
+      perfiladoPorDanna: updated.perfiladoPorDanna,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
 
     return res.status(200).json({
       ok: true,
       message: "Usuario perfilado exitosamente.",
-      user: updatedUser
+      user: responseUser,
     });
   } catch (err) {
-    console.error("❌ Error en perfilarEstudianteUniconnect:", err);
+    console.error("❌ Error en perfilarEstudiante:", err);
     return res.status(500).json({ error: "Error interno del servidor", detalle: err.message });
   }
 };
