@@ -118,12 +118,14 @@ const formatDate = (date) => {
   })
 }
 
+// controllers/applicationController.js
 export const getApplicationsByJob = async (req, res) => {
   try {
     const { jobId } = req.params
 
     const applications = await Application.find({ job: jobId })
-      .populate("student", "firstName lastName skills phone egresado email ")
+      .populate("student", "firstName lastName email phone studentId major graduationYear semestre tipoCarrera carrera about skills egresado experience education workExperience projects languages perfiladoPorDanna vacantePorDanna")
+      .sort({ createdAt: -1 })
 
     res.json(applications)
   } catch (error) {
