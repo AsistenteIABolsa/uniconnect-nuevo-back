@@ -94,3 +94,43 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" })
   }
 }
+export const registerAdmin = async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, phone, secretKey } = req.body
+
+    // Verificar clave secreta para crear admin
+    if (secretKey !== process.env.ADMIN_SECRET_KEY) {
+      return res.status(403).json({ message: "Clave secreta inválida" })
+    }
+
+    // Verificar si ya existe el usuario
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+      return res.status(400).json({ message: "El usuario ya existe" })
+    }
+
+    // Crear usuario con rol administrador 
+    const newAdmin = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      role: "administrador",
+    })
+
+    await newAdmin.save()
+
+    res.status(201).json({
+      message: "Administrador registrado exitosamente",
+      user: {
+        id: newAdmin._id,
+        email: newAdmin.email,
+        role: newAdmin.role,
+      },
+    })
+  } catch (error) {
+    console.error("Error creando administrador:", error)
+    res.status(500).json({ message: "Error interno del servidor" })
+  }
+}
