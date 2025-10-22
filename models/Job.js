@@ -26,7 +26,7 @@ const jobSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      required: true,
+      
       enum: ["Tiempo completo", "Medio tiempo", "Prácticas",],
     },
     mode: {
@@ -45,6 +45,7 @@ const jobSchema = new mongoose.Schema(
     vacanteCreadaPorDanna: {
       type: Boolean,
       default: false,
+      
     },
   },
   {
