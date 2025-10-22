@@ -49,12 +49,25 @@ export const getStudentApplications = async (req, res) => {
       })
       .sort({ createdAt: -1 })
 
-    const applicationsWithDetails = applications.map((app) => ({
-      ...app.toObject(),
-      companyName:
-        app.job.employer.profile?.companyName || `${app.job.employer.firstName} ${app.job.employer.lastName}`,
-      appliedAt: formatDate(app.createdAt),
-    }))
+    // Obtener el estado actual de cada trabajo
+    const applicationsWithDetails = await Promise.all(
+      applications.map(async (app) => {
+        // Obtener el trabajo actualizado para tener el estado más reciente
+        const currentJob = await Job.findById(app.job._id)
+        
+        return {
+          ...app.toObject(),
+          companyName:
+            app.job.employer.profile?.companyName || 
+            `${app.job.employer.firstName} ${app.job.employer.lastName}`,
+          appliedAt: formatDate(app.createdAt),
+          job: {
+            ...app.job.toObject(),
+            status: currentJob.status // Estado actual del trabajo
+          }
+        }
+      })
+    )
 
     res.json(applicationsWithDetails)
   } catch (error) {
@@ -62,7 +75,6 @@ export const getStudentApplications = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" })
   }
 }
-
 export const getJobApplications = async (req, res) => {
   try {
     const { jobId } = req.params

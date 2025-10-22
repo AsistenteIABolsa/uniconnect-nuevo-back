@@ -1,3 +1,4 @@
+// models/User.js
 import mongoose from "mongoose"
 import bcrypt from "bcryptjs"
 
@@ -27,6 +28,16 @@ const userSchema = new mongoose.Schema(
     },
     phone: String,
 
+    // Campos de verificación
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: String,
+    verificationCodeExpires: Date,
+    resetPasswordCode: String,
+    resetPasswordCodeExpires: Date,
+
     // Para estudiantes
     studentId: String,
     major: String,
@@ -43,7 +54,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    experience: String,
+    experience: {type: String,default: ""},
     education: [
       {
         institution: String,
@@ -88,7 +99,6 @@ const userSchema = new mongoose.Schema(
     },
 
     // Para empleadores
-    // Para empleadores - Campos existentes
     companyName: String,
     nit: String,
     industry: String,
@@ -98,7 +108,6 @@ const userSchema = new mongoose.Schema(
     // NUEVOS CAMPOS PARA EMPRESA
     mision: String,
     vision: String,
-    // Proyectos empresariales
     companyProjects: [
       {
         title: String,
@@ -114,7 +123,6 @@ const userSchema = new mongoose.Schema(
         }
       },
     ],
-    // Redes sociales
     socialMedia: {
       website: String,
       linkedin: String,
@@ -123,7 +131,6 @@ const userSchema = new mongoose.Schema(
       instagram: String,
       github: String,
     },
-    // Perfil empresarial profesional
     companyProfile: {
       founded: String,
       headquarters: String,
