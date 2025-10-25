@@ -16,7 +16,6 @@ const PORT = process.env.PORT
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
     origin: "https://uniconnect-six-psi.vercel.app/",//"http://localhost:5173",
     credentials: true,
   }),
@@ -57,7 +56,6 @@ app.use("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`)
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`)
-  console.log(`🌐 Frontend: http://localhost:5173`)
   console.log(`🌐 Frontend: https://uniconnect-six-psi.vercel.app/`)
   //console.log(`🌐 Frontend: http://localhost:5173`)
 })
